@@ -26,8 +26,8 @@
 <body>
     <h1>Aprendiendo a hacer app Laravel</h1>
     <p>les go</p>
-    <a href="/login_1"> Ingresar </a>
+    <a href="/login"> Ingresar </a>
     
-    <a href="/register_1">Registrar Usuario </a>
+    <a href="/register">Registrar Usuario </a>
 </body>
 </html>
