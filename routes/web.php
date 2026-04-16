@@ -1,26 +1,23 @@
 <?php
 
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('app');
+    return view('home');
 });
 
-Route::get('/login_1',[AuthController::class,'showLogin']);
-Route::post('/login_1',[AuthController::class,'login']);
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-Route::get('/register_1',[AuthController::class,'showRegister']);
-Route::post('/register_1',[AuthController::class,'register']);
+Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])
+    ->middleware(['auth', 'role:admin'])
+    ->name('admin.dashboard');
 
-Route::post('logout_1',[AuthController::class,'logout'])->middleware(['auth']);
+Route::get('/user/dashboard', [DashboardController::class, 'userDashboard'])
+    ->middleware(['auth', 'role:usuario'])
+    ->name('user.dashboard');
 
-Route::get('/dashboard',[DashboardController::class,'index'])->middleware('auth');
-
-/*Route::get('/admin',[AdminController::class,'index'])->middleware(['auth','role:admin']);*/
-
-Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->middleware(['auth', 'role:admin']);
-
-Route::get('/user/dashboard', [DashboardController::class, 'userDashboard'])->middleware(['auth', 'role:usuario']);
+    require __DIR__.'/auth.php';
