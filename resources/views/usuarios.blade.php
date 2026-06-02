@@ -9,4 +9,4 @@
     <p>Bienvenido {{auth()->user()->name}}
     
 
-@endsection
+@endsectionuse

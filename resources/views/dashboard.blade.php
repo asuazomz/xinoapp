@@ -14,7 +14,7 @@
         <a href="/admin">Ir al panel de admin</a>
         @endif
         <br>
-        <form method="POST" action="/logout_1">
+        <form method="POST" action="/logout">
             @csrf
             <button type="submit">Cerrar Sesión</button>
         </form>

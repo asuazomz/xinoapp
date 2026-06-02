@@ -13,7 +13,7 @@
 
     <p>Este es el panel para usuarios normales.</p>
 
-    <form method="POST" action="/logout_1">
+    <form method="POST" action="/logout">
         @csrf
         <button type="submit">Cerrar sesión</button>
     </form>

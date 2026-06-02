@@ -37,14 +37,14 @@
                             <a href="/admin/dashboard">Admin</a>
                     @endif
                <a href="/dashboard">Dashboard</a>
-                    <form method="POST" action="/logout_1" style="display:inline;">
+                    <form method="POST" action="/logout" style="display:inline;">
                             @csrf
                             <button type="submit">Salir</button>
                     </form>
             @endauth
             @guest
-                <a href="/login_1">Login</a>
-               <a href="/register_1">Registro</a>
+                <a href="/login">Login</a>
+               <a href="/register">Registro</a>
             @endguest
         </nav>
 
