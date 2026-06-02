@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function dashboard(): Response
     {
-        return view('admin');
-    }
-
-    public function dashboard()
-    {
-        return view('admin_dashboard');
+        return Inertia::render('AdminDashboard', [
+            'user' => Auth::user(),
+        ]);
     }
 }

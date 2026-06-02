@@ -3,9 +3,10 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
-    return view('home');
+    return Inertia::render('WelcomePortal');
 })->name('home');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
