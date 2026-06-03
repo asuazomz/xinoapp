@@ -1,28 +1,15 @@
 <script setup>
-import { router } from '@inertiajs/vue3'
+import AppLayout from '@/layouts/AppLayout.vue'
 
 defineProps({
   user: Object,
 })
-
-const logout = () => {
-  router.post('/logout')
-}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 p-8">
+  <AppLayout>
     <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold">Dashboard de Usuario</h1>
-
-        <button
-          @click="logout"
-          class="bg-red-600 text-white px-4 py-2 rounded"
-        >
-          Cerrar sesión
-        </button>
-      </div>
+      <h1 class="text-2xl font-bold">Dashboard de Usuario</h1>
 
       <div class="mt-6">
         <p><strong>Nombre:</strong> {{ user.name }}</p>
@@ -47,5 +34,5 @@ const logout = () => {
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
