@@ -8,10 +8,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  members: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const form = useForm({
-  person_name: '',
+  household_member_id: '',
   amount: '',
   month: props.month,
   description: '',
@@ -29,9 +33,9 @@ const guardarIngreso = () => {
   form.post('/finanzas/ingresos', {
     preserveScroll: true,
     onSuccess: () => {
-      form.reset('person_name', 'amount', 'description')
-      form.month = props.month
-    },
+  form.reset('household_member_id', 'amount', 'description')
+  form.month = props.month
+},
   })
 }
 </script>
@@ -50,16 +54,27 @@ const guardarIngreso = () => {
         <h2 class="text-xl font-bold">Registrar ingreso</h2>
 
         <div>
-          <label class="block text-sm font-medium">Persona</label>
-          <input
-            v-model="form.person_name"
-            class="w-full border rounded p-2"
-            placeholder="Ej: Ricardo"
-          />
-          <p v-if="form.errors.person_name" class="text-red-600 text-sm">
-            {{ form.errors.person_name }}
-          </p>
-        </div>
+  <label class="block text-sm font-medium">Participante</label>
+
+  <select
+    v-model="form.household_member_id"
+    class="w-full border rounded p-2"
+  >
+    <option value="">Selecciona un participante</option>
+
+    <option
+      v-for="member in members"
+      :key="member.id"
+      :value="member.id"
+    >
+      {{ member.name }}
+    </option>
+  </select>
+
+  <p v-if="form.errors.household_member_id" class="text-red-600 text-sm">
+    {{ form.errors.household_member_id }}
+  </p>
+</div>
 
         <div>
           <label class="block text-sm font-medium">Monto</label>
@@ -116,7 +131,7 @@ const guardarIngreso = () => {
           class="flex justify-between border-b py-3"
         >
           <div>
-            <p class="font-bold">{{ income.person_name }}</p>
+            <p class="font-bold">{{ income.member?.name || income.person_name  }}</p>
             <p v-if="income.description" class="text-sm text-gray-500">
               {{ income.description }}
             </p>

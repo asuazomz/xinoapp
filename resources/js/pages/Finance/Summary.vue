@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import FinanceLayout from '@/layouts/FinanceLayout.vue'
 import { Pie, Doughnut} from 'vue-chartjs'
+import { router } from '@inertiajs/vue3'
 
 import {
   Chart as ChartJS,
@@ -143,7 +144,7 @@ const repartoGastos = computed(() => {
     const aporte = totalGastos * porcentaje
 
     return {
-      name: income.person_name,
+      name: income.member?.name || income.person_name,
       income: ingreso,
       percentage: porcentaje * 100,
       contribution: aporte,
@@ -175,20 +176,65 @@ const repartoChartOptions = {
     },
   },
 }
+
+const cambiarMes = (direccion) => {
+  const [year, month] = props.month.split('-')
+
+  const fecha = new Date(Number(year), Number(month) - 1, 1)
+
+  fecha.setMonth(fecha.getMonth() + direccion)
+
+  const nuevoYear = fecha.getFullYear()
+  const nuevoMonth = String(fecha.getMonth() + 1).padStart(2, '0')
+
+  router.get('/finanzas/resumen', {
+    month: `${nuevoYear}-${nuevoMonth}`,
+  }, {
+    preserveState: false,
+    preserveScroll: true,
+  })
+}
+
 </script>
 
 <template>
   <FinanceLayout>
     <div class="space-y-6">
       <div class="bg-white rounded-xl shadow p-6">
-        <h1 class="text-2xl font-bold text-gray-800">
-          Resumen mensual
-        </h1>
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">
+        Resumen mensual
+      </h1>
 
-        <p class="text-gray-600 mt-2">
-          Gastos comunes del hogar para {{ nombreMes }}.
-        </p>
+      <p class="text-gray-600 mt-2">
+        Gastos comunes del hogar para {{ nombreMes }}.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        @click="cambiarMes(-1)"
+        class="px-4 py-2 rounded border bg-white hover:bg-gray-100"
+      >
+        ← Mes anterior
+      </button>
+
+      <div class="font-bold text-gray-800 min-w-36 text-center">
+        {{ nombreMes }}
       </div>
+
+      <button
+        type="button"
+        @click="cambiarMes(1)"
+        class="px-4 py-2 rounded border bg-white hover:bg-gray-100"
+      >
+        Mes siguiente →
+      </button>
+    </div>
+  </div>
+</div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-white rounded-xl shadow p-6">

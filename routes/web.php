@@ -58,8 +58,16 @@ Route::post('/finanzas/configuracion/categorias', [FinanceController::class, 'st
     ->middleware(['auth'])
     ->name('finances.categories.destroy');
 
-    Route::get('/finanzas/participantes', [FinanceController::class, 'Participants'])
+    Route::get('/finanzas/participantes', [FinanceController::class, 'participants'])
     ->middleware(['auth'])
-    ->name('finances.participantes');
+    ->name('finances.participants');
+
+Route::post('/finanzas/participantes', [FinanceController::class, 'storeParticipant'])
+    ->middleware(['auth'])
+    ->name('finances.participants.store');
+
+Route::delete('/finanzas/participantes/{member}', [FinanceController::class, 'destroyParticipant'])
+    ->middleware(['auth'])
+    ->name('finances.participants.destroy');
 
     require __DIR__.'/auth.php';
