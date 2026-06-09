@@ -84,10 +84,11 @@ const eliminarCategoria = (category) => {
         </div>
 
         <button
-            @click="eliminarCategoria(category)"
-            class="bg-red-600 text-white px-3 py-1 rounded text-sm"
+          type="button"
+          @click="eliminarCategoria(category)"
+          class="bg-red-600 text-white px-3 py-1 rounded text-sm"
         >
-            Eliminar
+          Eliminar
         </button>
         </div>
       </div>

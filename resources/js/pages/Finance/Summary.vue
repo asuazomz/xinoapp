@@ -1,6 +1,47 @@
 <script setup>
 import { computed } from 'vue'
 import FinanceLayout from '@/layouts/FinanceLayout.vue'
+import { Pie } from 'vue-chartjs'
+
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, ArcElement)
+
+const chartData = computed(() => ({
+  labels: gastosPorCategoria.value.map(item => item.category),
+  datasets: [
+{
+    label: 'Gastos por categoría',
+    data: gastosPorCategoria.value.map(item => item.amount),
+
+    backgroundColor: [
+        '#ef4444', // rojo
+        '#3b82f6', // azul
+        '#22c55e', // verde
+        '#f59e0b', // amarillo
+        '#8b5cf6', // violeta
+        '#06b6d4', // cyan
+        '#ec4899', // rosado
+        '#84cc16', // lima
+        '#f97316', // naranja
+        '#64748b', // gris
+    ],
+
+    borderWidth: 2,
+},
+],
+}))
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+}
 
 const props = defineProps({
   month: String,
@@ -123,9 +164,24 @@ const nombreMes = computed(() => {
     Distribución de gastos por categoría
   </h2>
 
+  <div class="bg-white rounded-xl shadow p-6">
+  <h2 class="text-xl font-bold text-gray-800 mb-4">
+    Distribución de gastos
+  </h2>
+
   <div v-if="gastosPorCategoria.length === 0" class="text-gray-500">
     No hay gastos registrados para este mes.
   </div>
+
+  <div class="h-72 w-72 mx-auto">
+    <Pie :data="chartData" :options="chartOptions" />
+  </div>
+  </div>
+
+  <div v-if="gastosPorCategoria.length === 0" class="text-gray-500">
+    No hay gastos registrados para este mes.
+  </div>
+
 
   <div v-else class="space-y-4">
     <div
