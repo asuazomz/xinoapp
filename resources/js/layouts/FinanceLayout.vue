@@ -24,8 +24,11 @@ import { Link } from '@inertiajs/vue3'
         </Link>
 
         <Link href="/finanzas/configuracion" class="font-semibold hover:underline">
-  Configuración
-</Link>
+        Configuración
+        </Link>
+        <Link href="/finanzas/participantes" class="font-semibold hover:underline">
+        Participantes
+        </Link>
       </div>
 
       <slot />

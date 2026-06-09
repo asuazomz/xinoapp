@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import FinanceLayout from '@/layouts/FinanceLayout.vue'
-import { Pie } from 'vue-chartjs'
+import { Pie, Doughnut} from 'vue-chartjs'
 
 import {
   Chart as ChartJS,
@@ -12,36 +12,6 @@ import {
 } from 'chart.js'
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
-
-const chartData = computed(() => ({
-  labels: gastosPorCategoria.value.map(item => item.category),
-  datasets: [
-{
-    label: 'Gastos por categoría',
-    data: gastosPorCategoria.value.map(item => item.amount),
-
-    backgroundColor: [
-        '#ef4444', // rojo
-        '#3b82f6', // azul
-        '#22c55e', // verde
-        '#f59e0b', // amarillo
-        '#8b5cf6', // violeta
-        '#06b6d4', // cyan
-        '#ec4899', // rosado
-        '#84cc16', // lima
-        '#f97316', // naranja
-        '#64748b', // gris
-    ],
-
-    borderWidth: 2,
-},
-],
-}))
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-}
 
 const props = defineProps({
   month: String,
@@ -63,6 +33,27 @@ const props = defineProps({
   },
 })
 
+const coloresGrafico = [
+  '#ef4444',
+  '#3b82f6',
+  '#22c55e',
+  '#f59e0b',
+  '#8b5cf6',
+  '#06b6d4',
+  '#ec4899',
+  '#84cc16',
+  '#f97316',
+  '#64748b',
+]
+
+const coloresReparto = [
+  '#2563eb',
+  '#16a34a',
+  '#f59e0b',
+  '#dc2626',
+  '#7c3aed',
+]
+
 const formatoDinero = (valor) => {
   return new Intl.NumberFormat('es-CL', {
     style: 'currency',
@@ -82,18 +73,39 @@ const gastosPorCategoria = computed(() => {
     const categoria = expense.category || 'Sin categoría'
     const monto = Number(expense.amount || 0)
 
-    if (!resumen[categoria]) {
-      resumen[categoria] = 0
-    }
-
-    resumen[categoria] += monto
+    resumen[categoria] = (resumen[categoria] || 0) + monto
   })
 
-  return Object.entries(resumen).map(([category, amount]) => ({
-    category,
-    amount,
-  }))
+  return Object.entries(resumen)
+    .map(([category, amount]) => ({
+      category,
+      amount,
+    }))
+    .sort((a, b) => b.amount - a.amount)
 })
+
+const chartData = computed(() => ({
+  labels: gastosPorCategoria.value.map(item => item.category),
+  datasets: [
+    {
+      label: 'Gastos por categoría',
+      data: gastosPorCategoria.value.map(item => item.amount),
+      backgroundColor: coloresGrafico,
+      borderColor: '#ffffff',
+      borderWidth: 2,
+    },
+  ],
+}))
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+}
 
 const porcentajeCategoria = (amount) => {
   const total = Number(props.totalExpense || 0)
@@ -102,14 +114,13 @@ const porcentajeCategoria = (amount) => {
     return 0
   }
 
-  return Math.round((Number(amount || 0) / total) * 100)
+  return ((Number(amount || 0) / total) * 100).toFixed(1)
 }
 
 const nombreMes = computed(() => {
   if (!props.month) return ''
 
   const [year, month] = props.month.split('-')
-
   const fecha = new Date(Number(year), Number(month) - 1, 1)
 
   return new Intl.DateTimeFormat('es-CL', {
@@ -117,6 +128,53 @@ const nombreMes = computed(() => {
     year: 'numeric',
   }).format(fecha)
 })
+
+const repartoGastos = computed(() => {
+  const totalIngresos = Number(props.totalIncome || 0)
+  const totalGastos = Number(props.totalExpense || 0)
+
+  if (totalIngresos === 0 || totalGastos === 0) {
+    return []
+  }
+
+  return props.incomes.map((income) => {
+    const ingreso = Number(income.amount || 0)
+    const porcentaje = ingreso / totalIngresos
+    const aporte = totalGastos * porcentaje
+
+    return {
+      name: income.person_name,
+      income: ingreso,
+      percentage: porcentaje * 100,
+      contribution: aporte,
+    }
+  })
+})
+const repartoChartData = computed(() => ({
+  labels: repartoGastos.value.map(item => item.name),
+  datasets: [
+    {
+      label: 'Aporte sugerido',
+      data: repartoGastos.value.map(item => item.contribution),
+      backgroundColor: coloresReparto,
+      borderColor: '#ffffff',
+      borderWidth: 2,
+    },
+  ],
+}))
+
+const repartoChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  rotation: -90,
+  circumference: 180,
+  cutout: '65%',
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+}
 </script>
 
 <template>
@@ -141,7 +199,7 @@ const nombreMes = computed(() => {
         </div>
 
         <div class="bg-white rounded-xl shadow p-6">
-          <p class="text-sm text-gray-500">Gastos comunes</p>
+          <p class="text-sm text-gray-500">Gastos del Hogar</p>
           <p class="text-2xl font-bold mt-2 text-red-700">
             {{ formatoDinero(totalExpense) }}
           </p>
@@ -158,123 +216,99 @@ const nombreMes = computed(() => {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl shadow p-6">
-  <h2 class="text-xl font-bold text-gray-800 mb-4">
-    Distribución de gastos por categoría
-  </h2>
+      <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">
+          Distribución de gastos por categoría
+        </h2>
 
-  <div class="bg-white rounded-xl shadow p-6">
-  <h2 class="text-xl font-bold text-gray-800 mb-4">
-    Distribución de gastos
-  </h2>
+        <div v-if="gastosPorCategoria.length === 0" class="text-gray-500">
+          No hay gastos registrados para este mes.
+        </div>
 
-  <div v-if="gastosPorCategoria.length === 0" class="text-gray-500">
-    No hay gastos registrados para este mes.
-  </div>
-
-  <div class="h-72 w-72 mx-auto">
-    <Pie :data="chartData" :options="chartOptions" />
-  </div>
-  </div>
-
-  <div v-if="gastosPorCategoria.length === 0" class="text-gray-500">
-    No hay gastos registrados para este mes.
-  </div>
-
-
-  <div v-else class="space-y-4">
-    <div
-      v-for="item in gastosPorCategoria"
-      :key="item.category"
-    >
-      <div class="flex justify-between mb-1">
-        <span class="font-medium text-gray-700">
-          {{ item.category }}
-        </span>
-
-        <span class="font-bold text-gray-800">
-          {{ formatoDinero(item.amount) }}
-        </span>
-      </div>
-
-      <div class="w-full bg-gray-200 rounded-full h-4">
-        <div
-          class="bg-black h-4 rounded-full"
-          :style="{ width: porcentajeCategoria(item.amount) + '%' }"
-        ></div>
-      </div>
-
-      <p class="text-sm text-gray-500 mt-1">
-        {{ porcentajeCategoria(item.amount) }}% del total de gastos
-      </p>
-    </div>
-  </div>
-</div>
-
-        <div class="bg-white rounded-xl shadow p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-4">
-            Gastos registrados
-          </h2>
-
-          <div v-if="expenses.length === 0" class="text-gray-500">
-            No hay gastos registrados para este mes.
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="h-72 w-72 mx-auto">
+            <Pie :data="chartData" :options="chartOptions" />
           </div>
 
-          <div
-            v-for="expense in expenses"
-            :key="expense.id"
-            class="border-b py-4"
-          >
-            <div class="flex justify-between gap-4">
-              <div>
-                <p class="font-bold text-gray-800">
-                  {{ expense.name }}
-                </p>
+          <div class="space-y-3">
+            <div
+              v-for="(item, index) in gastosPorCategoria"
+              :key="item.category"
+              class="flex items-center justify-between border-b pb-3"
+            >
+              <div class="flex items-center gap-3">
+                <span
+                  class="w-4 h-4 rounded-full"
+                  :style="{ backgroundColor: coloresGrafico[index % coloresGrafico.length] }"
+                ></span>
 
-                <p class="text-sm text-gray-500">
-                  {{ expense.category || 'Sin categoría' }}
-                </p>
+                <div>
+                  <p class="font-medium text-gray-800">
+                    {{ item.category }}
+                  </p>
 
-                <p v-if="expense.description" class="text-sm text-gray-500 mt-1">
-                  {{ expense.description }}
-                </p>
+                  <p class="text-sm text-gray-500">
+                    {{ porcentajeCategoria(item.amount) }}% del total
+                  </p>
+                </div>
               </div>
 
-              <div class="font-bold text-gray-800">
-                {{ formatoDinero(expense.amount) }}
-              </div>
+              <p class="font-bold text-gray-800">
+                {{ formatoDinero(item.amount) }}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="bg-white rounded-xl shadow p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">
-          Ingresos registrados
-        </h2>
+  <h2 class="text-xl font-bold text-gray-800 mb-2">
+    División del Gasto Mensual
+  </h2>
 
-        <div v-if="incomes.length === 0" class="text-gray-500">
-          No hay ingresos registrados para este mes.
-        </div>
+  <p class="text-gray-600 mb-6">
+    Calculado según el porcentaje de ingresos de cada persona.
+  </p>
 
-        <div
-          v-for="income in incomes"
-          :key="income.id"
-          class="flex justify-between border-b py-3"
-        >
+  <div v-if="repartoGastos.length === 0" class="text-gray-500">
+    Registra ingresos y gastos para calcular el reparto.
+  </div>
+
+  <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <div class="h-56 w-96 max-w-full mx-auto">
+      <Doughnut :data="repartoChartData" :options="repartoChartOptions" />
+    </div>
+
+    <div class="space-y-3">
+      <div
+        v-for="(item, index) in repartoGastos"
+        :key="item.name"
+        class="flex items-center justify-between border-b pb-3"
+      >
+        <div class="flex items-center gap-3">
+          <span
+            class="w-4 h-4 rounded-full"
+            :style="{ backgroundColor: coloresReparto[index % coloresReparto.length] }"
+          ></span>
+
           <div>
-            <p class="font-bold">{{ income.person_name }}</p>
-            <p v-if="income.description" class="text-sm text-gray-500">
-              {{ income.description }}
+            <p class="font-medium text-gray-800">
+              {{ item.name }}
+            </p>
+
+            <p class="text-sm text-gray-500">
+              {{ item.percentage.toFixed(1) }}% de los ingresos
             </p>
           </div>
-
-          <p class="font-bold text-green-700">
-            {{ formatoDinero(income.amount) }}
-          </p>
         </div>
+
+        <p class="font-bold text-gray-800">
+          {{ formatoDinero(item.contribution) }}
+        </p>
       </div>
+    </div>
+  </div>
+</div>
     </div>
   </FinanceLayout>
 </template>

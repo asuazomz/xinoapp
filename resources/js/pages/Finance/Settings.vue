@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
+import { useForm, router } from '@inertiajs/vue3'
 import FinanceLayout from '@/layouts/FinanceLayout.vue'
 
 defineProps({
