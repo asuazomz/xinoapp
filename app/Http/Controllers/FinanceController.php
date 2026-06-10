@@ -13,6 +13,7 @@ use App\Models\HouseholdMember;
 
 
 
+
 class FinanceController extends Controller
 {
     public function home(): Response
@@ -160,6 +161,55 @@ class FinanceController extends Controller
         return redirect()->back();
     }
 
+    public function updateIncome(Request $request, Income $income): RedirectResponse
+{
+    $validated = $request->validate([
+        'household_member_id' => ['required', 'exists:household_members,id'],
+        'amount' => ['required', 'numeric', 'min:0'],
+        'month' => ['required', 'date_format:Y-m'],
+        'description' => ['nullable', 'string'],
+    ]);
 
+    $member = HouseholdMember::findOrFail($validated['household_member_id']);
+
+    $income->update([
+        'household_member_id' => $validated['household_member_id'],
+        'person_name' => $member->name,
+        'amount' => $validated['amount'],
+        'month' => $validated['month'],
+        'description' => $validated['description'] ?? null,
+    ]);
+
+    return redirect()->back();
+}
+
+public function destroyIncome(Income $income): RedirectResponse
+{
+    $income->delete();
+
+    return redirect()->back();
+}
+
+public function updateExpense(Request $request, Expense $expense): RedirectResponse
+{
+    $validated = $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'amount' => ['required', 'numeric', 'min:0'],
+        'category' => ['required', 'string', 'max:255'],
+        'month' => ['required', 'date_format:Y-m'],
+        'description' => ['nullable', 'string'],
+    ]);
+
+    $expense->update($validated);
+
+    return redirect()->back();
+}
+
+public function destroyExpense(Expense $expense): RedirectResponse
+{
+    $expense->delete();
+
+    return redirect()->back();
+}
 
 }

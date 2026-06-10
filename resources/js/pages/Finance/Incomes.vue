@@ -1,5 +1,6 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+import { useForm, router } from '@inertiajs/vue3'
 import FinanceLayout from '@/layouts/FinanceLayout.vue'
 
 const props = defineProps({
@@ -21,6 +22,15 @@ const form = useForm({
   description: '',
 })
 
+const editingIncomeId = ref(null)
+
+const editIncomeForm = useForm({
+  household_member_id: '',
+  amount: '',
+  month: '',
+  description: '',
+})
+
 const formatoDinero = (valor) => {
   return new Intl.NumberFormat('es-CL', {
     style: 'currency',
@@ -33,10 +43,70 @@ const guardarIngreso = () => {
   form.post('/finanzas/ingresos', {
     preserveScroll: true,
     onSuccess: () => {
-  form.reset('household_member_id', 'amount', 'description')
-  form.month = props.month
-},
+      form.reset('household_member_id', 'amount', 'description')
+      form.month = props.month
+    },
   })
+}
+
+const cambiarMes = (direccion) => {
+  const [year, month] = props.month.split('-')
+  const fecha = new Date(Number(year), Number(month) - 1, 1)
+
+  fecha.setMonth(fecha.getMonth() + direccion)
+
+  const nuevoYear = fecha.getFullYear()
+  const nuevoMonth = String(fecha.getMonth() + 1).padStart(2, '0')
+
+  router.get('/finanzas/ingresos', {
+    month: `${nuevoYear}-${nuevoMonth}`,
+  }, {
+    preserveScroll: true,
+    preserveState: false,
+  })
+}
+
+const nombreMes = computed(() => {
+  if (!props.month) return ''
+
+  const [year, month] = props.month.split('-')
+  const fecha = new Date(Number(year), Number(month) - 1, 1)
+
+  return new Intl.DateTimeFormat('es-CL', {
+    month: 'long',
+    year: 'numeric',
+  }).format(fecha)
+})
+
+const editarIngreso = (income) => {
+  editingIncomeId.value = income.id
+  editIncomeForm.household_member_id = income.household_member_id
+  editIncomeForm.amount = income.amount
+  editIncomeForm.month = income.month
+  editIncomeForm.description = income.description || ''
+}
+
+const cancelarEdicionIngreso = () => {
+  editingIncomeId.value = null
+  editIncomeForm.reset()
+}
+
+const actualizarIngreso = (income) => {
+  editIncomeForm.put(`/finanzas/ingresos/${income.id}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      editingIncomeId.value = null
+      editIncomeForm.reset()
+    },
+  })
+}
+
+const eliminarIngreso = (income) => {
+  if (confirm('¿Eliminar este ingreso?')) {
+    router.delete(`/finanzas/ingresos/${income.id}`, {
+      preserveScroll: true,
+    })
+  }
 }
 </script>
 
@@ -44,37 +114,60 @@ const guardarIngreso = () => {
   <FinanceLayout>
     <div class="space-y-6">
       <div class="bg-white rounded-xl shadow p-6">
-        <h1 class="text-2xl font-bold">Ingresos del hogar</h1>
-        <p class="text-gray-600 mt-2">
-          Registra los ingresos mensuales de las personas que participan en el hogar.
-        </p>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">Ingresos del hogar</h1>
+            <p class="text-gray-600 mt-2">
+              Registra los ingresos mensuales de las personas que participan en el hogar.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              @click="cambiarMes(-1)"
+              class="px-4 py-2 rounded border bg-white hover:bg-gray-100"
+            >
+              ← Mes anterior
+            </button>
+
+            <div class="font-bold text-gray-800 min-w-36 text-center">
+              {{ nombreMes }}
+            </div>
+
+            <button
+              type="button"
+              @click="cambiarMes(1)"
+              class="px-4 py-2 rounded border bg-white hover:bg-gray-100"
+            >
+              Mes siguiente →
+            </button>
+          </div>
+        </div>
       </div>
 
       <form @submit.prevent="guardarIngreso" class="bg-white rounded-xl shadow p-6 space-y-4">
         <h2 class="text-xl font-bold">Registrar ingreso</h2>
 
         <div>
-  <label class="block text-sm font-medium">Participante</label>
+          <label class="block text-sm font-medium">Participante</label>
 
-  <select
-    v-model="form.household_member_id"
-    class="w-full border rounded p-2"
-  >
-    <option value="">Selecciona un participante</option>
+          <select v-model="form.household_member_id" class="w-full border rounded p-2">
+            <option value="">Selecciona un participante</option>
 
-    <option
-      v-for="member in members"
-      :key="member.id"
-      :value="member.id"
-    >
-      {{ member.name }}
-    </option>
-  </select>
+            <option
+              v-for="member in members"
+              :key="member.id"
+              :value="member.id"
+            >
+              {{ member.name }}
+            </option>
+          </select>
 
-  <p v-if="form.errors.household_member_id" class="text-red-600 text-sm">
-    {{ form.errors.household_member_id }}
-  </p>
-</div>
+          <p v-if="form.errors.household_member_id" class="text-red-600 text-sm">
+            {{ form.errors.household_member_id }}
+          </p>
+        </div>
 
         <div>
           <label class="block text-sm font-medium">Monto</label>
@@ -128,18 +221,95 @@ const guardarIngreso = () => {
         <div
           v-for="income in incomes"
           :key="income.id"
-          class="flex justify-between border-b py-3"
+          class="border-b py-4"
         >
-          <div>
-            <p class="font-bold">{{ income.member?.name || income.person_name  }}</p>
-            <p v-if="income.description" class="text-sm text-gray-500">
-              {{ income.description }}
-            </p>
+          <div v-if="editingIncomeId === income.id" class="space-y-3">
+            <select
+              v-model="editIncomeForm.household_member_id"
+              class="w-full border rounded p-2"
+            >
+              <option value="">Selecciona un participante</option>
+
+              <option
+                v-for="member in members"
+                :key="member.id"
+                :value="member.id"
+              >
+                {{ member.name }}
+              </option>
+            </select>
+
+            <input
+              v-model="editIncomeForm.amount"
+              type="number"
+              class="w-full border rounded p-2"
+            />
+
+            <input
+              v-model="editIncomeForm.month"
+              type="month"
+              class="w-full border rounded p-2"
+            />
+
+            <textarea
+              v-model="editIncomeForm.description"
+              class="w-full border rounded p-2"
+            ></textarea>
+
+            <div class="flex gap-2">
+              <button
+                type="button"
+                @click="actualizarIngreso(income)"
+                class="bg-black text-white px-3 py-1 rounded"
+              >
+                Guardar
+              </button>
+
+              <button
+                type="button"
+                @click="cancelarEdicionIngreso"
+                class="border px-3 py-1 rounded"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
 
-          <p class="font-bold text-green-700">
-            {{ formatoDinero(income.amount) }}
-          </p>
+          <div v-else class="flex justify-between items-start gap-4">
+            <div>
+              <p class="font-bold">
+                {{ income.member?.name || income.person_name }}
+              </p>
+
+              <p v-if="income.description" class="text-sm text-gray-500">
+                {{ income.description }}
+              </p>
+            </div>
+
+            <div class="text-right">
+              <p class="font-bold text-green-700">
+                {{ formatoDinero(income.amount) }}
+              </p>
+
+              <div class="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  @click="editarIngreso(income)"
+                  class="text-sm border px-2 py-1 rounded"
+                >
+                  Editar
+                </button>
+
+                <button
+                  type="button"
+                  @click="eliminarIngreso(income)"
+                  class="text-sm bg-red-600 text-white px-2 py-1 rounded"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

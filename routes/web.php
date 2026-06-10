@@ -70,4 +70,20 @@ Route::delete('/finanzas/participantes/{member}', [FinanceController::class, 'de
     ->middleware(['auth'])
     ->name('finances.participants.destroy');
 
+    Route::put('/finanzas/ingresos/{income}', [FinanceController::class, 'updateIncome'])
+    ->middleware(['auth'])
+    ->name('finances.incomes.update');
+
+Route::delete('/finanzas/ingresos/{income}', [FinanceController::class, 'destroyIncome'])
+    ->middleware(['auth'])
+    ->name('finances.incomes.destroy');
+
+Route::put('/finanzas/gastos/{expense}', [FinanceController::class, 'updateExpense'])
+    ->middleware(['auth'])
+    ->name('finances.expenses.update');
+
+Route::delete('/finanzas/gastos/{expense}', [FinanceController::class, 'destroyExpense'])
+    ->middleware(['auth'])
+    ->name('finances.expenses.destroy');
+
     require __DIR__.'/auth.php';
