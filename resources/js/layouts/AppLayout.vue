@@ -31,8 +31,9 @@ const irDashboard = () => {
         </div>
 
         <nav class="flex items-center gap-4">
-          <Link href="/" class="text-gray-700 hover:underline">
-            Inicio
+         
+          <Link href="/finanzas" class="text-gray-700 hover:underline">
+            Finanzas
           </Link>
 
           <button

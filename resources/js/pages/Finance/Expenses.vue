@@ -111,6 +111,13 @@ const eliminarGasto = (expense) => {
     })
   }
 }
+
+const actualizarNombreDesdeCategoria = () => {
+  if (!form.name || form.name.trim() === '') {
+    form.name = form.category
+  }
+}
+
 </script>
 
 <template>
@@ -153,33 +160,8 @@ const eliminarGasto = (expense) => {
         <h2 class="text-xl font-bold">Registrar gasto</h2>
 
         <div>
-          <label class="block text-sm font-medium">Nombre del gasto</label>
-          <input
-            v-model="form.name"
-            class="w-full border rounded p-2"
-            placeholder="Ej: Cuenta de luz"
-          />
-          <p v-if="form.errors.name" class="text-red-600 text-sm">
-            {{ form.errors.name }}
-          </p>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium">Monto</label>
-          <input
-            v-model="form.amount"
-            type="number"
-            class="w-full border rounded p-2"
-            placeholder="Ej: 45000"
-          />
-          <p v-if="form.errors.amount" class="text-red-600 text-sm">
-            {{ form.errors.amount }}
-          </p>
-        </div>
-
-        <div>
           <label class="block text-sm font-medium">Categoría</label>
-          <select v-model="form.category" class="w-full border rounded p-2">
+          <select v-model="form.category" @change="actualizarNombreDesdeCategoria" class="w-full border rounded p-2" >
             <option value="">Selecciona una categoría</option>
 
             <option
@@ -205,6 +187,31 @@ const eliminarGasto = (expense) => {
           />
           <p v-if="form.errors.month" class="text-red-600 text-sm">
             {{ form.errors.month }}
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Nombre del gasto</label>
+          <input
+            v-model="form.name"
+            class="w-full border rounded p-2"
+            placeholder="Ej: Cuenta de luz"
+          />
+          <p v-if="form.errors.name" class="text-red-600 text-sm">
+            {{ form.errors.name }}
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Monto</label>
+          <input
+            v-model="form.amount"
+            type="number"
+            class="w-full border rounded p-2"
+            placeholder="Ej: 45000"
+          />
+          <p v-if="form.errors.amount" class="text-red-600 text-sm">
+            {{ form.errors.amount }}
           </p>
         </div>
 

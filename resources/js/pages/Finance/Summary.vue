@@ -1,7 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import FinanceLayout from '@/layouts/FinanceLayout.vue'
-import { Pie, Doughnut} from 'vue-chartjs'
+import { Pie, Doughnut, Line} from 'vue-chartjs'
 import { router } from '@inertiajs/vue3'
 
 import {
@@ -10,9 +10,22 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
 } from 'chart.js'
 
-ChartJS.register(Title, Tooltip, Legend, ArcElement)
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale
+)
 
 const props = defineProps({
   month: String,
@@ -31,6 +44,14 @@ const props = defineProps({
   totalExpense: {
     type: [Number, String],
     default: 0,
+  },
+  yearExpenses: {
+  type: Array,
+  default: () => [],
+  },
+  year: {
+    type: [String, Number],
+    default: '',
   },
 })
 
@@ -195,6 +216,101 @@ const cambiarMes = (direccion) => {
   })
 }
 
+const mesesAnio = [
+  { key: '01', label: 'Ene' },
+  { key: '02', label: 'Feb' },
+  { key: '03', label: 'Mar' },
+  { key: '04', label: 'Abr' },
+  { key: '05', label: 'May' },
+  { key: '06', label: 'Jun' },
+  { key: '07', label: 'Jul' },
+  { key: '08', label: 'Ago' },
+  { key: '09', label: 'Sep' },
+  { key: '10', label: 'Oct' },
+  { key: '11', label: 'Nov' },
+  { key: '12', label: 'Dic' },
+]
+
+const categoriasAnuales = computed(() => {
+  return [...new Set(props.yearExpenses.map(expense => expense.category || 'Sin categoría'))]
+})
+
+const lineChartData = computed(() => {
+  return {
+    labels: mesesAnio.map(mes => mes.label),
+    datasets: categoriasAnuales.value
+      .filter(category => selectedCategories.value.includes(category))
+      .map((category, index) => {
+        return {
+          label: category,
+          data: mesesAnio.map((mes) => {
+            const monthKey = `${props.year}-${mes.key}`
+
+            const total = props.yearExpenses
+              .filter(expense => expense.month === monthKey && (expense.category || 'Sin categoría') === category)
+              .reduce((sum, expense) => sum + Number(expense.amount || 0), 0)
+
+            return total > 0 ? total : null
+          }),
+          borderColor: coloresGrafico[index % coloresGrafico.length],
+          backgroundColor: coloresGrafico[index % coloresGrafico.length],
+          tension: 0,
+          spanGaps: true,
+        }
+      }),
+  }
+})
+
+const lineChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      position: 'bottom',
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        callback: function (value) {
+          return new Intl.NumberFormat('es-CL', {
+            style: 'currency',
+            currency: 'CLP',
+            maximumFractionDigits: 0,
+          }).format(value)
+        },
+      },
+    },
+  },
+}
+
+const selectedCategories = ref([])
+
+watch(categoriasAnuales, (categories) => {
+  selectedCategories.value = categories
+}, { immediate: true })
+
+const toggleCategory = (category) => {
+  if (selectedCategories.value.includes(category)) {
+    selectedCategories.value = selectedCategories.value.filter(item => item !== category)
+  } else {
+    selectedCategories.value.push(category)
+  }
+}
+
+const seleccionarTodas = () => {
+  selectedCategories.value = [...categoriasAnuales.value]
+}
+
+const limpiarCategorias = () => {
+  selectedCategories.value = []
+}
+
 </script>
 
 <template>
@@ -308,6 +424,77 @@ const cambiarMes = (direccion) => {
       </div>
 
       <div class="bg-white rounded-xl shadow p-6">
+  <h2 class="text-xl font-bold text-gray-800 mb-2">
+    Evolución anual de gastos
+  </h2>
+
+  <p class="text-gray-600 mb-6">
+    Gastos mensuales por categoría durante {{ year }}.
+  </p>
+
+  <div v-if="yearExpenses.length === 0" class="text-gray-500">
+    No hay gastos registrados para este año.
+  </div>
+
+  <div v-else class="space-y-6">
+    <div class="border rounded-xl p-4 bg-gray-50">
+      <div class="flex justify-between items-center mb-4">
+        <p class="font-semibold text-gray-700">
+          Categorías a mostrar
+        </p>
+
+        <div class="flex gap-2">
+          <button
+            type="button"
+            @click="seleccionarTodas"
+            class="text-sm border px-3 py-1 rounded bg-white"
+          >
+            Todas
+          </button>
+
+          <button
+            type="button"
+            @click="limpiarCategorias"
+            class="text-sm border px-3 py-1 rounded bg-white"
+          >
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <label
+          v-for="category in categoriasAnuales"
+          :key="category"
+          class="flex items-center gap-2 border rounded px-3 py-2 bg-white cursor-pointer"
+        >
+          <input
+            type="checkbox"
+            :checked="selectedCategories.includes(category)"
+            @change="toggleCategory(category)"
+          />
+
+          <span>{{ category }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div v-if="selectedCategories.length === 0" class="text-gray-500">
+      Selecciona al menos una categoría para ver el gráfico.
+    </div>
+
+    <div v-else class="h-96">
+      <Line :data="lineChartData" :options="lineChartOptions" />
+    </div>
+  </div>
+</div>
+
+      
+
+      <div class="bg-white rounded-xl shadow p-6">
+  
+
+        
   <h2 class="text-xl font-bold text-gray-800 mb-2">
     División del Gasto Mensual
   </h2>

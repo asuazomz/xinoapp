@@ -193,6 +193,18 @@ const eliminarIngreso = (income) => {
         </div>
 
         <div>
+          <label class="block text-sm font-medium">Mes</label>
+          <input
+            v-model="form.month"
+            type="month"
+            class="w-full border rounded p-2"
+          />
+          <p v-if="form.errors.month" class="text-red-600 text-sm">
+            {{ form.errors.month }}
+          </p>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium">Monto</label>
           <input
             v-model="form.amount"
@@ -202,18 +214,6 @@ const eliminarIngreso = (income) => {
           />
           <p v-if="form.errors.amount" class="text-red-600 text-sm">
             {{ form.errors.amount }}
-          </p>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium">Mes</label>
-          <input
-            v-model="form.month"
-            type="month"
-            class="w-full border rounded p-2"
-          />
-          <p v-if="form.errors.month" class="text-red-600 text-sm">
-            {{ form.errors.month }}
           </p>
         </div>
 

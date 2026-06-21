@@ -56,12 +56,18 @@ class FinanceController extends Controller
         ]);
     }
 
+    
     public function summary(): Response
     {
         $userId = Auth::id();
         $month = request('month', now()->format('Y-m'));
-
+        $year = substr($month, 0, 4);
+        $yearExpenses = Expense::where('user_id', $userId)
+        ->where('month', 'like', $year . '-%')
+        ->get();
         return Inertia::render('Finance/Summary', [
+            'yearExpenses' => $yearExpenses,
+            'year' => $year,
             'month' => $month,
             'incomes' => Income::with(['member', 'category'])
                 ->where('user_id', $userId)
