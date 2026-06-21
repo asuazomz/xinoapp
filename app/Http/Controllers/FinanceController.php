@@ -11,28 +11,28 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 
 class FinanceController extends Controller
 {
-    public function home(): Response
-    {
-        return Inertia::render('Finance/Home');
-    }
-
     public function incomes(): Response
     {
+        $userId = Auth::id();
         $month = request('month', now()->format('Y-m'));
 
         return Inertia::render('Finance/Incomes', [
             'month' => $month,
             'incomes' => Income::with(['member', 'category'])
+                ->where('user_id', $userId)
                 ->where('month', $month)
                 ->latest()
                 ->get(),
-            'members' => HouseholdMember::where('is_active', true)
+            'members' => HouseholdMember::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
-            'incomeCategories' => IncomeCategory::where('is_active', true)
+            'incomeCategories' => IncomeCategory::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -40,14 +40,17 @@ class FinanceController extends Controller
 
     public function expenses(): Response
     {
+        $userId = Auth::id();
         $month = request('month', now()->format('Y-m'));
 
         return Inertia::render('Finance/Expenses', [
             'month' => $month,
-            'expenses' => Expense::where('month', $month)
+            'expenses' => Expense::where('user_id', $userId)
+                ->where('month', $month)
                 ->latest()
                 ->get(),
-            'categories' => ExpenseCategory::where('is_active', true)
+            'categories' => ExpenseCategory::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -55,32 +58,44 @@ class FinanceController extends Controller
 
     public function summary(): Response
     {
+        $userId = Auth::id();
         $month = request('month', now()->format('Y-m'));
 
         return Inertia::render('Finance/Summary', [
             'month' => $month,
             'incomes' => Income::with(['member', 'category'])
+                ->where('user_id', $userId)
                 ->where('month', $month)
                 ->latest()
                 ->get(),
-            'expenses' => Expense::where('month', $month)
+            'expenses' => Expense::where('user_id', $userId)
+                ->where('month', $month)
                 ->latest()
                 ->get(),
-            'totalIncome' => Income::where('month', $month)->sum('amount'),
-            'totalExpense' => Expense::where('month', $month)->sum('amount'),
+            'totalIncome' => Income::where('user_id', $userId)
+                ->where('month', $month)
+                ->sum('amount'),
+            'totalExpense' => Expense::where('user_id', $userId)
+                ->where('month', $month)
+                ->sum('amount'),
         ]);
     }
 
     public function settings(): Response
     {
+        $userId = Auth::id();
+
         return Inertia::render('Finance/Settings', [
-            'members' => HouseholdMember::where('is_active', true)
+            'members' => HouseholdMember::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
-            'categories' => ExpenseCategory::where('is_active', true)
+            'categories' => ExpenseCategory::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
-            'incomeCategories' => IncomeCategory::where('is_active', true)
+            'incomeCategories' => IncomeCategory::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -88,6 +103,8 @@ class FinanceController extends Controller
 
     public function storeIncome(Request $request): RedirectResponse
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
             'household_member_id' => ['required', 'exists:household_members,id'],
             'income_category_id' => ['required', 'exists:income_categories,id'],
@@ -96,11 +113,16 @@ class FinanceController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        $category = IncomeCategory::findOrFail($validated['income_category_id']);
+        $member = HouseholdMember::where('user_id', $userId)
+            ->findOrFail($validated['household_member_id']);
+
+        $category = IncomeCategory::where('user_id', $userId)
+            ->findOrFail($validated['income_category_id']);
 
         if (! $category->allow_multiple_per_month) {
-            $exists = Income::where('household_member_id', $validated['household_member_id'])
-                ->where('income_category_id', $validated['income_category_id'])
+            $exists = Income::where('user_id', $userId)
+                ->where('household_member_id', $member->id)
+                ->where('income_category_id', $category->id)
                 ->where('month', $validated['month'])
                 ->exists();
 
@@ -111,11 +133,10 @@ class FinanceController extends Controller
             }
         }
 
-        $member = HouseholdMember::findOrFail($validated['household_member_id']);
-
         Income::create([
-            'household_member_id' => $validated['household_member_id'],
-            'income_category_id' => $validated['income_category_id'],
+            'user_id' => $userId,
+            'household_member_id' => $member->id,
+            'income_category_id' => $category->id,
             'person_name' => $member->name,
             'amount' => $validated['amount'],
             'month' => $validated['month'],
@@ -129,6 +150,10 @@ class FinanceController extends Controller
 
     public function updateIncome(Request $request, Income $income): RedirectResponse
     {
+        $userId = Auth::id();
+
+        abort_if($income->user_id !== $userId, 403);
+
         $validated = $request->validate([
             'household_member_id' => ['required', 'exists:household_members,id'],
             'income_category_id' => ['required', 'exists:income_categories,id'],
@@ -137,11 +162,16 @@ class FinanceController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        $category = IncomeCategory::findOrFail($validated['income_category_id']);
+        $member = HouseholdMember::where('user_id', $userId)
+            ->findOrFail($validated['household_member_id']);
+
+        $category = IncomeCategory::where('user_id', $userId)
+            ->findOrFail($validated['income_category_id']);
 
         if (! $category->allow_multiple_per_month) {
-            $exists = Income::where('household_member_id', $validated['household_member_id'])
-                ->where('income_category_id', $validated['income_category_id'])
+            $exists = Income::where('user_id', $userId)
+                ->where('household_member_id', $member->id)
+                ->where('income_category_id', $category->id)
                 ->where('month', $validated['month'])
                 ->where('id', '!=', $income->id)
                 ->exists();
@@ -153,11 +183,9 @@ class FinanceController extends Controller
             }
         }
 
-        $member = HouseholdMember::findOrFail($validated['household_member_id']);
-
         $income->update([
-            'household_member_id' => $validated['household_member_id'],
-            'income_category_id' => $validated['income_category_id'],
+            'household_member_id' => $member->id,
+            'income_category_id' => $category->id,
             'person_name' => $member->name,
             'amount' => $validated['amount'],
             'month' => $validated['month'],
@@ -169,6 +197,8 @@ class FinanceController extends Controller
 
     public function destroyIncome(Income $income): RedirectResponse
     {
+        abort_if($income->user_id !== Auth::id(), 403);
+
         $income->delete();
 
         return redirect()->back();
@@ -176,6 +206,8 @@ class FinanceController extends Controller
 
     public function storeExpense(Request $request): RedirectResponse
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
@@ -184,7 +216,14 @@ class FinanceController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        Expense::create($validated);
+        Expense::create([
+            'user_id' => $userId,
+            'name' => $validated['name'],
+            'amount' => $validated['amount'],
+            'category' => $validated['category'],
+            'month' => $validated['month'],
+            'description' => $validated['description'] ?? null,
+        ]);
 
         return redirect()->route('finances.expenses', [
             'month' => $validated['month'],
@@ -193,6 +232,8 @@ class FinanceController extends Controller
 
     public function updateExpense(Request $request, Expense $expense): RedirectResponse
     {
+        abort_if($expense->user_id !== Auth::id(), 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
@@ -208,6 +249,8 @@ class FinanceController extends Controller
 
     public function destroyExpense(Expense $expense): RedirectResponse
     {
+        abort_if($expense->user_id !== Auth::id(), 403);
+
         $expense->delete();
 
         return redirect()->back();
@@ -215,11 +258,14 @@ class FinanceController extends Controller
 
     public function storeCategory(Request $request): RedirectResponse
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:expense_categories,name'],
+            'name' => ['required', 'string', 'max:255'],
         ]);
 
         ExpenseCategory::create([
+            'user_id' => $userId,
             'name' => $validated['name'],
             'is_active' => true,
         ]);
@@ -229,6 +275,8 @@ class FinanceController extends Controller
 
     public function destroyCategory(ExpenseCategory $category): RedirectResponse
     {
+        abort_if($category->user_id !== Auth::id(), 403);
+
         $category->update([
             'is_active' => false,
         ]);
@@ -238,12 +286,15 @@ class FinanceController extends Controller
 
     public function storeIncomeCategory(Request $request): RedirectResponse
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:income_categories,name'],
+            'name' => ['required', 'string', 'max:255'],
             'allow_multiple_per_month' => ['boolean'],
         ]);
 
         IncomeCategory::create([
+            'user_id' => $userId,
             'name' => $validated['name'],
             'allow_multiple_per_month' => $request->boolean('allow_multiple_per_month'),
             'is_active' => true,
@@ -254,6 +305,8 @@ class FinanceController extends Controller
 
     public function destroyIncomeCategory(IncomeCategory $category): RedirectResponse
     {
+        abort_if($category->user_id !== Auth::id(), 403);
+
         $category->update([
             'is_active' => false,
         ]);
@@ -263,8 +316,11 @@ class FinanceController extends Controller
 
     public function participants(): Response
     {
+        $userId = Auth::id();
+
         return Inertia::render('Finance/Participants', [
-            'members' => HouseholdMember::where('is_active', true)
+            'members' => HouseholdMember::where('user_id', $userId)
+                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -272,11 +328,14 @@ class FinanceController extends Controller
 
     public function storeParticipant(Request $request): RedirectResponse
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:household_members,name'],
+            'name' => ['required', 'string', 'max:255'],
         ]);
 
         HouseholdMember::create([
+            'user_id' => $userId,
             'name' => $validated['name'],
             'is_active' => true,
         ]);
@@ -286,6 +345,8 @@ class FinanceController extends Controller
 
     public function destroyParticipant(HouseholdMember $member): RedirectResponse
     {
+        abort_if($member->user_id !== Auth::id(), 403);
+
         $member->update([
             'is_active' => false,
         ]);

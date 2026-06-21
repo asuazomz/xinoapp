@@ -8,6 +8,7 @@ use App\Models\HouseholdMember;
 class Income extends Model
 {
     protected $fillable = [
+        'user_id',
         'household_member_id',
         'person_name',
         'amount',
