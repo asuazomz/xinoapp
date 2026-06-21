@@ -22,7 +22,7 @@ Route::get('/user/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware(['auth', 'role:usuario'])
     ->name('user.dashboard');
 
-    Route::get('/finanzas', [FinanceController::class, 'home'])
+    Route::get('/finanzas', [FinanceController::class, 'summary'])
     ->middleware(['auth'])
     ->name('finances.home');
 
@@ -85,5 +85,13 @@ Route::put('/finanzas/gastos/{expense}', [FinanceController::class, 'updateExpen
 Route::delete('/finanzas/gastos/{expense}', [FinanceController::class, 'destroyExpense'])
     ->middleware(['auth'])
     ->name('finances.expenses.destroy');
+
+    Route::post('/finanzas/configuracion/categorias-ingreso', [FinanceController::class, 'storeIncomeCategory'])
+    ->middleware(['auth'])
+    ->name('finances.income-categories.store');
+
+Route::delete('/finanzas/configuracion/categorias-ingreso/{category}', [FinanceController::class, 'destroyIncomeCategory'])
+    ->middleware(['auth'])
+    ->name('finances.income-categories.destroy');
 
     require __DIR__.'/auth.php';

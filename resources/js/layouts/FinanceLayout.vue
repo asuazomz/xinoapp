@@ -7,10 +7,12 @@ import { Link } from '@inertiajs/vue3'
   <AppLayout>
     <div class="space-y-6">
       <div class="bg-white rounded-xl shadow p-4 flex gap-4">
-        <Link href="/finanzas" class="font-semibold hover:underline">
-          Inicio
-        </Link>
 
+
+        <Link href="/finanzas/resumen" class="font-semibold hover:underline">
+          Resumen
+        </Link>
+        
         <Link href="/finanzas/ingresos" class="font-semibold hover:underline">
           Ingresos
         </Link>
@@ -19,16 +21,10 @@ import { Link } from '@inertiajs/vue3'
           Gastos
         </Link>
 
-        <Link href="/finanzas/resumen" class="font-semibold hover:underline">
-          Resumen
-        </Link>
-
         <Link href="/finanzas/configuracion" class="font-semibold hover:underline">
         Configuración
         </Link>
-        <Link href="/finanzas/participantes" class="font-semibold hover:underline">
-        Participantes
-        </Link>
+
       </div>
 
       <slot />

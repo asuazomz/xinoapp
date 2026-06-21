@@ -13,10 +13,17 @@ class Income extends Model
         'amount',
         'month',
         'description',
+        'income_category_id',
     ];
 
     public function member()
     {
         return $this->belongsTo(HouseholdMember::class, 'household_member_id');
     }
+
+    public function category()
+    {
+    return $this->belongsTo(IncomeCategory::class, 'income_category_id');
+    }
+    
 }

@@ -13,10 +13,15 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  incomeCategories: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const form = useForm({
   household_member_id: '',
+  income_category_id: '',
   amount: '',
   month: props.month,
   description: '',
@@ -26,6 +31,7 @@ const editingIncomeId = ref(null)
 
 const editIncomeForm = useForm({
   household_member_id: '',
+  income_category_id: '',
   amount: '',
   month: '',
   description: '',
@@ -43,7 +49,7 @@ const guardarIngreso = () => {
   form.post('/finanzas/ingresos', {
     preserveScroll: true,
     onSuccess: () => {
-      form.reset('household_member_id', 'amount', 'description')
+      form.reset('household_member_id', 'income_category_id', 'amount', 'description')
       form.month = props.month
     },
   })
@@ -81,6 +87,7 @@ const nombreMes = computed(() => {
 const editarIngreso = (income) => {
   editingIncomeId.value = income.id
   editIncomeForm.household_member_id = income.household_member_id
+  editIncomeForm.income_category_id = income.income_category_id
   editIncomeForm.amount = income.amount
   editIncomeForm.month = income.month
   editIncomeForm.description = income.description || ''
@@ -116,9 +123,11 @@ const eliminarIngreso = (income) => {
       <div class="bg-white rounded-xl shadow p-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-bold text-gray-800">Ingresos del hogar</h1>
+            <h1 class="text-2xl font-bold text-gray-800">
+              Ingresos del hogar
+            </h1>
             <p class="text-gray-600 mt-2">
-              Registra los ingresos mensuales de las personas que participan en el hogar.
+              Registra los ingresos mensuales asociados a cada participante.
             </p>
           </div>
 
@@ -151,10 +160,8 @@ const eliminarIngreso = (income) => {
 
         <div>
           <label class="block text-sm font-medium">Participante</label>
-
           <select v-model="form.household_member_id" class="w-full border rounded p-2">
             <option value="">Selecciona un participante</option>
-
             <option
               v-for="member in members"
               :key="member.id"
@@ -163,9 +170,25 @@ const eliminarIngreso = (income) => {
               {{ member.name }}
             </option>
           </select>
-
           <p v-if="form.errors.household_member_id" class="text-red-600 text-sm">
             {{ form.errors.household_member_id }}
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Categoría de ingreso</label>
+          <select v-model="form.income_category_id" class="w-full border rounded p-2">
+            <option value="">Selecciona una categoría</option>
+            <option
+              v-for="category in incomeCategories"
+              :key="category.id"
+              :value="category.id"
+            >
+              {{ category.name }}
+            </option>
+          </select>
+          <p v-if="form.errors.income_category_id" class="text-red-600 text-sm">
+            {{ form.errors.income_category_id }}
           </p>
         </div>
 
@@ -199,7 +222,7 @@ const eliminarIngreso = (income) => {
           <textarea
             v-model="form.description"
             class="w-full border rounded p-2"
-            placeholder="Ej: Sueldo principal, bono, ingreso extra"
+            placeholder="Ej: sueldo líquido, bono, venta, ingreso extra"
           ></textarea>
         </div>
 
@@ -229,13 +252,26 @@ const eliminarIngreso = (income) => {
               class="w-full border rounded p-2"
             >
               <option value="">Selecciona un participante</option>
-
               <option
                 v-for="member in members"
                 :key="member.id"
                 :value="member.id"
               >
                 {{ member.name }}
+              </option>
+            </select>
+
+            <select
+              v-model="editIncomeForm.income_category_id"
+              class="w-full border rounded p-2"
+            >
+              <option value="">Selecciona una categoría</option>
+              <option
+                v-for="category in incomeCategories"
+                :key="category.id"
+                :value="category.id"
+              >
+                {{ category.name }}
               </option>
             </select>
 
@@ -279,6 +315,10 @@ const eliminarIngreso = (income) => {
             <div>
               <p class="font-bold">
                 {{ income.member?.name || income.person_name }}
+              </p>
+
+              <p class="text-sm text-gray-500">
+                {{ income.category?.name || 'Sin categoría' }}
               </p>
 
               <p v-if="income.description" class="text-sm text-gray-500">
